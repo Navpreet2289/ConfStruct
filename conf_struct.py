@@ -26,7 +26,10 @@ class CField(object):
         self.code = code
         self.label = label
 
-        self.fmt = fmt
+        if fmt:
+            self.struct = struct.Struct(format=fmt)
+        else:
+            self.struct = None
         self.constructor = constructor
 
     def build(self, value):
@@ -36,16 +39,16 @@ class CField(object):
         return self._parse(binary)
 
     def _build(self, value):
-        if self.fmt:
-            return struct.pack(self.fmt, value)
+        if self.struct:
+            return self.struct.pack(value)
         elif self.constructor:
             return self.constructor.build(value)
         else:
             return None
 
     def _parse(self, binary):
-        if self.fmt:
-            value, = struct.unpack(self.fmt, binary)
+        if self.struct:
+            value, = self.struct.unpack(binary)
             return value
         elif self.constructor:
             return self.constructor.parse(binary)
@@ -60,7 +63,7 @@ class ConfStructMeta(type):
         for name, field in six.iteritems(attrs):
             if isinstance(field, CField):
                 if field.code in code_lookup:
-                    raise DefineException('Duplicate code {}'.format(field.code))
+                    raise DefineException('Duplicate code {} for {} in {}'.format(field.code, name, cls.__name__))
                 field.name = name
                 code_lookup[field.code] = field
                 name_lookup[name] = field
