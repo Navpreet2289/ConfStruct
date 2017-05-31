@@ -5,7 +5,7 @@
 
 ## Overview
 
-ConfStruct is a builder and parser between python objects and binary data in a specific scene.
+ConfStruct is a builder and parser between python dictionary and  "length-body" binary data.
 
 For example, when you send some configure values to a RTU device.You may not send all values in a time,
 so these configure values in bytes stream is not in a fixed position.The probably structure may be described as the following table:
@@ -58,11 +58,38 @@ b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'
 {'server_address':'192.168.1.200:10200', 'awaken_period': 3600}
 ```
 
-## Integrate with construct library
+## Constructor
 
-[Construct](http://construct.readthedocs.io/en/latest/)  is a powerful **declarative** parser (and builder) for binary data.
+The constructor is describe how to build and parse between python dictionary and binary data.These are three ways to set the constructor for every field.
 
-Assign an object Implementing `build` and `parse` to `CField.constructor`,The following code fragment has same effect with the above one. 
+### 1 CField.fmt
+
+set a format string to `CField.fmt`  and it will be pass to `struct.Struct` as a parameter,the way only abl for single value and not 
+
+### 2 Custom Constructor
+
+This way  set a interface object to  `CField.constructor`, The interface must Implement `build` and `parse` method. 
+
+```python
+class Constructor(object):
+    def buid(self, value):
+        # return binary data
+        pass
+    def parse(self, binary):
+        # return unpack result
+        pass
+```
+
+### 3 Integrate with construct library
+
+[Construct](http://construct.readthedocs.io/en/latest/)  is a powerful declarative parser (and builder) for binary data.There are some classes Implement ing the same methods in the above way.These classes include:
+
+- Byte,Short,Int etc.
+- Struct
+- Sequence
+- Adapter
+
+The above-mentioned demo code fragment can also rewrite with *Construct* library. 
 
 ```python
 from construct import Struct, Adapter, Byte, Short, Int
@@ -84,7 +111,7 @@ class DeviceConfigStruct(ConfStruct):
     awaken_period = CField(code=0x03, constructor=Int)
 ```
 
-Besides `Adapter`, `Struct`  and `Sequence ` are also supported.See tests code in the source for more detail.
+See tests code in the source for more detail.
 
 ## Compatibility
 
