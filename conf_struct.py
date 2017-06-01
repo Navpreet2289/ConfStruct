@@ -56,6 +56,38 @@ class CField(object):
             return None
 
 
+class COptions(object):
+    code_fmt = '>B'
+    length_fmt = '>B'
+
+    def __init__(self, **kwargs):
+        self.code_fmt = struct.Struct(self.code_fmt)
+        self.length_fmt = struct.Struct(self.length_fmt)
+
+    @property
+    def size(self):
+        return self.code_fmt.size + self.length_fmt.size
+
+    @property
+    def code_offset(self):
+        return 0
+
+    @property
+    def length_offset(self):
+        return self.code_fmt.size
+
+    def pack(self, code, length):
+        return self.code_fmt.pack(code) + self.length_fmt.pack(length)
+
+    def unpack_code(self, buffer, offset):
+        code, = self.code_fmt.unpack_from(buffer, offset)
+        return code
+
+    def unpack_length(self, buffer, offset):
+        length, = self.length_fmt.unpack_from(buffer, offset)
+        return length
+
+
 class ConfStructMeta(type):
     def __new__(cls, name, bases, attrs):
         code_lookup = {}
@@ -63,23 +95,31 @@ class ConfStructMeta(type):
         for name, field in six.iteritems(attrs):
             if isinstance(field, CField):
                 if field.code in code_lookup:
-                    raise DefineException('Duplicate code {} for {} in {}'.format(field.code, name, cls.__name__))
+                    raise DefineException('Duplicate code {} for {}'.format(field.code, name))
                 field.name = name
                 code_lookup[field.code] = field
                 name_lookup[name] = field
         attrs['code_lookup'] = code_lookup
         attrs['name_lookup'] = name_lookup
+        opts_cls = attrs.pop('Options', COptions)
+        attrs['_opts'] = opts_cls()
+
         return type.__new__(cls, name, bases, attrs)
 
 
 class ConfStruct(six.with_metaclass(ConfStructMeta)):
+    @property
+    def opts(self):
+        return self._opts
+
     def parse(self, binary):
         values = {}
         index = 0
-        total = len(binary) - 2
+        total = len(binary) - self.opts.size
         while index <= total:
-            code, length = struct.unpack('>BB', binary[index:index + 2])
-            value_binary = binary[index + 2:index + 2 + length]
+            code, = self.opts.code_fmt.unpack_from(binary, offset=index)
+            length, = self.opts.length_fmt.unpack_from(binary, offset=index + self.opts.code_fmt.size)
+            value_binary = binary[index + self.opts.size:index + self.opts.size + length]
             if len(value_binary) == length:
                 field = self.code_lookup.get(code)
                 if field:
@@ -94,7 +134,7 @@ class ConfStruct(six.with_metaclass(ConfStructMeta)):
                     raise ParseException('Invalid code {}'.format(code))
             else:
                 raise ParseException('No enough binary, expect {} but {}'.format(length, len(value_binary)))
-            index += length + 2
+            index += length + self.opts.size
         return values
 
     def build(self, **kwargs):
@@ -109,5 +149,5 @@ class ConfStruct(six.with_metaclass(ConfStructMeta)):
                     if func:
                         value_binary = func(value)
             if value_binary:
-                binary += struct.pack('>BB', field.code, len(value_binary)) + value_binary
+                binary += self.opts.pack(field.code, len(value_binary)) + value_binary
         return binary
