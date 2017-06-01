@@ -7,7 +7,7 @@
 
 ConfStruct is a builder and parser between python dictionary and  "length-body" binary data.
 
-For example, when you send some configure values to a RTU device.You may not send all values in a time,
+When you send some configure values to a RTU device.You may not send all values in a time,
 so these configure values in bytes stream is not in a fixed position.The probably structure may be described as the following table:
 
 | Field       | PC1  | VL1  | V1   | PC2  | VL2  | V 2  | ...  | PC   | VL n | V n  |
@@ -17,15 +17,28 @@ so these configure values in bytes stream is not in a fixed position.The probabl
 
 Note: PC = param code, VL = value length, V = value
 
+For example, the following table is configure parameters supported for a GPRS RTU device.
+
+| Field Name     | Code | Data Length In Bytes | Data type                | Description                     |
+| -------------- | ---- | -------------------- | ------------------------ | ------------------------------- |
+| Delay Restart  | 1    | 4                    | Unsigned 32-bit interger | Delay seconds to restart device |
+| Server Address | 2    | 6                    | 4-byte IP + 2-byte port  | Server address to connect       |
+| Awaken Period  | 3    | 2                    | Unsigned 16-bit interger | The interval of reporting data  |
+
+The demo data `b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'` sent by device can be split into several parts.
+
+| Offset | Data                     | Description                              |
+| ------ | ------------------------ | ---------------------------------------- |
+| 0      | \x02                     | "Server Address" Field                   |
+| 1      | \x06                     | The after 6 bytes (2-7) store real value |
+| 2-7    | \xc0\xa8\x01\xc8\x27\xd8 | Parse to IP and  port                    |
+| 8      | \x01                     | "Delay Restart" Field                    |
+| 9      | \x02                     | The after 2 bytes(10-11) store real value |
+| 10-11  | \x00\xb4                 | parse into a unsigned 32-bit interger : 180 |
+
+So the data can be parsed to the `{server_address='192.168.1.200:10200', delayed_restart=180}` .
+
 ## Basic usage
-
-The configure values what my demo GPRS RTU device support are list in the following table.
-
-| Field Name     | Code | Byte Length | Data type                | Description                     |
-| -------------- | ---- | ----------- | ------------------------ | ------------------------------- |
-| Delay Restart  | 1    | 4           | Unsigned 32-bit interger | Delay seconds to restart device |
-| Server Address | 2    | 6           | 4-byte ip + 2-byte port  | Server address to connect       |
-| Awaken Period  | 3    | 2           | Unsigned 16-bit interger | The interval of reporting data  |
 
 Use `ConfStruct` to describe the device config protocol.
 
@@ -60,13 +73,13 @@ b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'
 
 ## Constructor
 
-The constructor is describe how to build and parse between python dictionary and binary data.These are three ways to set the constructor for every field.
+The constructor is describe how to build and parse between python dictionary and binary data.These are three ways to set the constructor in field level or struct level.
 
-### 1 CField.fmt
+### 1 Format String
 
-set a format string to `CField.fmt`  and it will be pass to `struct.Struct` as a parameter,the way only abl for single value and not 
+set a format string to `CField.fmt`  and it will be pass to `struct.Struct` as a parameter.
 
-### 2 Custom Constructor
+### 2 Custom Constructor Interface
 
 This way  set a interface object to  `CField.constructor`, The interface must Implement `build` and `parse` method. 
 
@@ -113,11 +126,27 @@ class DeviceConfigStruct(ConfStruct):
 
 See tests code in the source for more detail.
 
+## Custom Build/Parse Options
+
+`COptions` is a inner class of ConfStruct contains options affecting build/parse process.
+
+**code_fmt**
+
+The format string of code field. Default value: >B;
+
+**length_fmt**
+
+The format string of length field.Default value: >B
+
+
+
 ## Compatibility
 
 The package has been tested in 2.7, 3.4, 3.5, 3.6 .
 
-Note: The result of `build` is not unique due to unordered dict below python3.6.
+NOTE
+
+- The result of `build` is not unique due to unordered dictionary below python3.6.
 
 ## LICENSE
 

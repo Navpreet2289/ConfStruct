@@ -6,7 +6,7 @@ import sys
 import struct
 import unittest
 
-from conf_struct import ConfStruct, CField, DefineException, DefineException
+from conf_struct import ConfStruct, CField, DefineException, COptions
 
 PY36 = sys.version_info[:2] >= (3, 6)
 
@@ -75,26 +75,44 @@ class ConfTestCase(unittest.TestCase):
 
         # Build test
         binary_data = dcs.build(delayed_restart=180, awaken_period=3600, server_address='192.168.1.200:10200')
+        result = {
+            b'\x01\x02\x00\xb4\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x03\x04\x00\x00\x0e\x10',
+            b'\x01\x02\x00\xb4\x03\x04\x00\x00\x0e\x10\x02\x06\xc0\xa8\x01\xc8\x27\xd8',
+            b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4\x03\x04\x00\x00\x0e\x10',
+            b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x03\x04\x00\x00\x0e\x10\x01\x02\x00\xb4',
+            b'\x03\x04\x00\x00\x0e\x10\x01\x02\x00\xb4\x02\x06\xc0\xa8\x01\xc8\x27\xd8',
+            b'\x03\x04\x00\x00\x0e\x10\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'
+        }
         if PY36:
             self.assertEqual(b'\x01\x02\x00\xb4\x03\x04\x00\x00\x0e\x10\x02\x06\xc0\xa8\x01\xc8\x27\xd8', binary_data)
         else:
-            self.assertIn(binary_data, {
-                b'\x01\x02\x00\xb4\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x03\x04\x00\x00\x0e\x10',
-                b'\x01\x02\x00\xb4\x03\x04\x00\x00\x0e\x10\x02\x06\xc0\xa8\x01\xc8\x27\xd8',
-                b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4\x03\x04\x00\x00\x0e\x10',
-                b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x03\x04\x00\x00\x0e\x10\x01\x02\x00\xb4',
-                b'\x03\x04\x00\x00\x0e\x10\x01\x02\x00\xb4\x02\x06\xc0\xa8\x01\xc8\x27\xd8',
-                b'\x03\x04\x00\x00\x0e\x10\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'
-            })
+            self.assertIn(binary_data, result)
 
-        # Parse test
-        test_binary = b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x03\x04\x00\x00\x0e\x10\x01\x02\x00\xb4'
-        data = dcs.parse(test_binary)
-        self.assertDictEqual({
-            'server_address': '192.168.1.200:10200',
-            'delayed_restart': 180,
-            'awaken_period': 3600
-        }, data)
+        for test_binary in result:
+            data = dcs.parse(test_binary)
+            self.assertDictEqual({
+                'server_address': '192.168.1.200:10200',
+                'delayed_restart': 180,
+                'awaken_period': 3600
+            }, data)
+
+
+# -----------Custom Options Test Cases--------------------
+
+class MetaOptionStruct(ConfStruct):
+    a1 = CField(code=0x00, fmt='>H')
+    a2 = CField(code=0x01, fmt='>I')
+
+    class Options(COptions):
+        code_fmt = '>H'
+        length_fmt = '>H'
+
+
+class MetaOptionTestCase(unittest.TestCase):
+    def test_parse_build(self):
+        mos = MetaOptionStruct()
+        self.assertEqual(b'\x00\x00\x00\x02\x00\x01', mos.build(a1=1))
+        self.assertDictEqual({'a1': 4}, mos.parse(b'\x00\x00\x00\x02\x00\x04'))
 
 
 if __name__ == '__main__':
