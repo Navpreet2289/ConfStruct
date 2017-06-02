@@ -112,6 +112,8 @@ class ConfStruct(six.with_metaclass(ConfStructMeta)):
         values = {}
         index = 0
         total = len(binary) - self.opts.size
+        if len(binary) != 0 and total <= 0:
+            raise ParseException('No enough binary')
         while index <= total:
             code = self.opts.unpack_code(binary, offset=index)
             length = self.opts.unpack_length(binary, offset=index + self.opts.length_offset)

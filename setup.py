@@ -2,10 +2,7 @@
 
 from __future__ import unicode_literals
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
 
 lib_classifiers = [
     "Development Status :: 4 - Beta",
@@ -22,7 +19,7 @@ lib_classifiers = [
 ]
 
 setup(name="ConfStruct",
-      version='0.5.0',
+      version='0.6.0',
       author="kinegratii",
       author_email="kinegratii@gmail.com",
       url="https://github.com/kinegratii/ConfStruct",
