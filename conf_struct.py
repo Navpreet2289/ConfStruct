@@ -6,7 +6,7 @@ import struct
 
 import six
 
-__all__ = ['DefineException', 'ParseException', 'BuildException', 'CField', 'ConfStruct']
+__all__ = ['DefineException', 'ParseException', 'BuildException', 'ConfStruct', 'CField', 'COptions']
 
 
 class DefineException(Exception):
@@ -21,39 +21,35 @@ class BuildException(Exception):
     pass
 
 
+class StructConstruct(object):
+    def __init__(self, fmt):
+        self.struct = struct.Struct(format=fmt)
+
+    def build(self, value):
+        return self.struct.pack(value)
+
+    def parse(self, binary):
+        value, = self.struct.unpack(binary)
+        return value
+
+
 class CField(object):
     def __init__(self, code, label=None, fmt=None, constructor=None):
         self.code = code
         self.label = label
 
         if fmt:
-            self.struct = struct.Struct(format=fmt)
+            self.constructor = StructConstruct(fmt)
         else:
-            self.struct = None
-        self.constructor = constructor
+            self.constructor = constructor
 
     def build(self, value):
-        return self._build(value)
+        if self.constructor:
+            return self.constructor.build(value)
 
     def parse(self, binary):
-        return self._parse(binary)
-
-    def _build(self, value):
-        if self.struct:
-            return self.struct.pack(value)
-        elif self.constructor:
-            return self.constructor.build(value)
-        else:
-            return None
-
-    def _parse(self, binary):
-        if self.struct:
-            value, = self.struct.unpack(binary)
-            return value
-        elif self.constructor:
+        if self.constructor:
             return self.constructor.parse(binary)
-        else:
-            return None
 
 
 class COptions(object):
@@ -117,8 +113,8 @@ class ConfStruct(six.with_metaclass(ConfStructMeta)):
         index = 0
         total = len(binary) - self.opts.size
         while index <= total:
-            code, = self.opts.code_fmt.unpack_from(binary, offset=index)
-            length, = self.opts.length_fmt.unpack_from(binary, offset=index + self.opts.code_fmt.size)
+            code = self.opts.unpack_code(binary, offset=index)
+            length = self.opts.unpack_length(binary, offset=index + self.opts.length_offset)
             value_binary = binary[index + self.opts.size:index + self.opts.size + length]
             if len(value_binary) == length:
                 field = self.code_lookup.get(code)
