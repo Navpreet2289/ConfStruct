@@ -121,6 +121,7 @@ class AdvanceConfStruct(ConfStruct):
     c1 = SingleField(code=1, fmt='4s')
     c2 = CField(code=2, fmt='4s')
     c3 = SequenceField(code=3, fmt='>BB')
+    c4 = CField(code=4, fmt='>BB', multiple=True)
 
 
 class BTestCase(unittest.TestCase):
@@ -130,6 +131,7 @@ class BTestCase(unittest.TestCase):
         self.assertEqual(b'\x02\x04abcd', acs.build(c2='abcd'))
         self.assertEqual(b'\x03\x02\x02\x03', acs.build(c3=(2, 3)))
         self.assertEqual({'c2': 'bbbb'}, acs.parse(b'\x02\x04bbbb'))
+        self.assertEqual(b'\x04\x02\x02\x03', acs.build(c4=(2, 3)))
 
 
 if __name__ == '__main__':

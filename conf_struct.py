@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import struct
+import re
 
 import six
 
@@ -90,10 +91,12 @@ class CFieldBase(object):
 
 
 class CField(CFieldBase):
-    def __init__(self, code, constructor=None, label=None, fmt=None, encoding='utf8', **kwargs):
+    def __init__(self, code, constructor=None, label=None, fmt=None, encoding='utf8', multiple=False, **kwargs):
         if fmt:
-            # TODO add DeprecationWarning for this class
-            constructor = SingleConstructor(fmt=fmt, encoding=encoding, **kwargs)
+            if multiple:
+                constructor = SequenceConstructor(fmt=fmt, encoding=encoding, **kwargs)
+            else:
+                constructor = SingleConstructor(fmt=fmt, encoding=encoding, **kwargs)
         super(CField, self).__init__(code, constructor, label, **kwargs)
 
 
