@@ -21,7 +21,7 @@ class BuildException(Exception):
     pass
 
 
-class StructConstruct(object):
+class StructConstructor(object):
     def __init__(self, fmt):
         self.struct = struct.Struct(format=fmt)
 
@@ -33,23 +33,30 @@ class StructConstruct(object):
         return value
 
 
-class CField(object):
-    def __init__(self, code, label=None, fmt=None, constructor=None):
+class CFieldBase(object):
+    def __init__(self, code, constructor=None, label=None, **kwargs):
         self.code = code
+        self.constructor = constructor
         self.label = label
 
-        if fmt:
-            self.constructor = StructConstruct(fmt)
-        else:
-            self.constructor = constructor
+    @property
+    def has_constructor(self):
+        return self.constructor is not None
 
     def build(self, value):
-        if self.constructor:
+        if self.has_constructor:
             return self.constructor.build(value)
 
     def parse(self, binary):
-        if self.constructor:
+        if self.has_constructor:
             return self.constructor.parse(binary)
+
+
+class CField(CFieldBase):
+    def __init__(self, code, constructor=None, label=None, fmt=None, **kwargs):
+        if fmt:
+            constructor = StructConstructor(fmt)
+        super(CField, self).__init__(code, constructor, label, **kwargs)
 
 
 class COptions(object):
