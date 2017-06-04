@@ -6,7 +6,7 @@ import sys
 import struct
 import unittest
 
-from conf_struct import ConfStruct, CField, DefineException, COptions
+from conf_struct import ConfStruct, CField, DefineException, COptions, SequenceField, SingleField
 
 PY36 = sys.version_info[:2] >= (3, 6)
 
@@ -113,6 +113,23 @@ class MetaOptionTestCase(unittest.TestCase):
         mos = MetaOptionStruct()
         self.assertEqual(b'\x00\x00\x00\x02\x00\x01', mos.build(a1=1))
         self.assertDictEqual({'a1': 4}, mos.parse(b'\x00\x00\x00\x02\x00\x04'))
+
+
+# --------------- String and multiple element features------------------------------------
+
+class AdvanceConfStruct(ConfStruct):
+    c1 = SingleField(code=1, fmt='4s')
+    c2 = CField(code=2, fmt='4s')
+    c3 = SequenceField(code=3, fmt='>BB')
+
+
+class BTestCase(unittest.TestCase):
+    def test_base(self):
+        acs = AdvanceConfStruct()
+        self.assertEqual({'c1': 'bbbb'}, acs.parse(b'\x01\x04bbbb'))
+        self.assertEqual(b'\x02\x04abcd', acs.build(c2='abcd'))
+        self.assertEqual(b'\x03\x02\x02\x03', acs.build(c3=(2, 3)))
+        self.assertEqual({'c2': 'bbbb'}, acs.parse(b'\x02\x04bbbb'))
 
 
 if __name__ == '__main__':

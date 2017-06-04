@@ -9,6 +9,8 @@ import six
 __all__ = ['DefineException', 'ParseException', 'BuildException', 'ConfStruct', 'CField', 'COptions']
 
 
+# ---------- Exceptions ----------
+
 class DefineException(Exception):
     pass
 
@@ -21,18 +23,53 @@ class BuildException(Exception):
     pass
 
 
-class StructConstructor(object):
-    def __init__(self, fmt):
+# ---------- Constructors  ----------
+
+class ConstructorBase(object):
+    def __init__(self, fmt, encoding='utf8', **kwargs):
         self.struct = struct.Struct(format=fmt)
+        self.encoding = encoding
 
     def build(self, value):
-        return self.struct.pack(value)
+        pass
+
+    def parse(self, binary):
+        pass
+
+    def _ensure_bytes(self, value):
+        if isinstance(value, six.text_type):
+            return value.encode(encoding=self.encoding)
+        else:
+            return value
+
+    def _ensure_string(self, value):
+        if isinstance(value, six.binary_type):
+            return value.decode(encoding=self.encoding)
+        else:
+            return value
+
+
+class SingleConstructor(ConstructorBase):
+    def build(self, value):
+        return self.struct.pack(self._ensure_bytes(value))
 
     def parse(self, binary):
         value, = self.struct.unpack(binary)
-        return value
+        return self._ensure_string(value)
 
 
+class SequenceConstructor(ConstructorBase):
+    def build(self, value):
+        value = list(map(self._ensure_bytes, value))
+        return self.struct.pack(*value)
+
+    def parse(self, binary):
+        values = self.struct.unpack(binary)
+        values = list(map(self._ensure_string, values))
+        return values
+
+
+# ---------- Fields ----------
 class CFieldBase(object):
     def __init__(self, code, constructor=None, label=None, **kwargs):
         self.code = code
@@ -53,11 +90,39 @@ class CFieldBase(object):
 
 
 class CField(CFieldBase):
-    def __init__(self, code, constructor=None, label=None, fmt=None, **kwargs):
+    def __init__(self, code, constructor=None, label=None, fmt=None, encoding='utf8', **kwargs):
         if fmt:
-            constructor = StructConstructor(fmt)
+            # TODO add DeprecationWarning for this class
+            constructor = SingleConstructor(fmt=fmt, encoding=encoding, **kwargs)
         super(CField, self).__init__(code, constructor, label, **kwargs)
 
+
+class StructField(CFieldBase):
+    constructor_class = None
+
+    def __init__(self, code, fmt, encoding='utf8', label=None, **kwargs):
+        constructor = self.constructor_class(fmt=fmt, encoding=encoding)
+        super(StructField, self).__init__(code, constructor=constructor, label=label)
+
+
+class SingleField(StructField):
+    constructor_class = SingleConstructor
+
+
+class SequenceField(StructField):
+    constructor_class = SequenceConstructor
+
+
+class DictField(SequenceField):
+    pass
+
+
+class ConstructorField(CFieldBase):
+    def __init__(self, code, constructor=None, label=None, **kwargs):
+        super(ConstructorField, self).__init__(code, constructor, label, **kwargs)
+
+
+# ---------- Options ----------
 
 class COptions(object):
     code_fmt = '>B'
@@ -91,12 +156,14 @@ class COptions(object):
         return length
 
 
+# ---------- ConfStruct ----------
+
 class ConfStructMeta(type):
     def __new__(cls, name, bases, attrs):
         code_lookup = {}
         name_lookup = {}
         for name, field in six.iteritems(attrs):
-            if isinstance(field, CField):
+            if isinstance(field, CFieldBase):
                 if field.code in code_lookup:
                     raise DefineException('Duplicate code {} for {}'.format(field.code, name))
                 field.name = name
