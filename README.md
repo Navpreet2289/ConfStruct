@@ -5,6 +5,8 @@
 
 ## Overview
 
+### What can this project solve  ?
+
 ConfStruct is a builder and parser between python dictionary and  "length-body" binary data.
 
 When you send some configure values to a RTU device.You may not send all values in a time,
@@ -25,7 +27,7 @@ For example, the following table is configure parameters supported for a GPRS RT
 | Server Address | 2    | 6                    | 4-byte IP + 2-byte port  | Server address to connect       |
 | Awaken Period  | 3    | 2                    | Unsigned 16-bit interger | The interval of reporting data  |
 
-The demo data `b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'` sent by device can be split into several parts.
+The demo data `b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'` sent by device can be split into several parts.every part is explained as the following table.
 
 | Offset | Data                     | Description                              |
 | ------ | ------------------------ | ---------------------------------------- |
@@ -38,7 +40,7 @@ The demo data `b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'` sent by devi
 
 So the data can be parsed to the `{server_address='192.168.1.200:10200', delayed_restart=180}` .
 
-## Basic usage
+### How to solve using code
 
 Use `ConfStruct` to describe the device config protocol.
 
@@ -71,17 +73,74 @@ b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'
 {'server_address':'192.168.1.200:10200', 'awaken_period': 3600}
 ```
 
-## Constructor
+## API - Field
 
-The constructor is describe how to build and parse between python dictionary and binary data.These are three ways to set the constructor in field level or struct level.
+This part contains all API references of `Field` including the fields options and field type.
 
-### 1 Format String
+### General field options
 
-set a format string to `CField.fmt`  and it will be pass to `struct.Struct` as a parameter.
+**code**
 
-### 2 Custom Constructor Interface
+A *immutable* object representing the field type, this option is required for every field and must be unique.The `Field.code` can be a object as following *immutable type*.
 
-This way  set a interface object to  `CField.constructor`, The interface must Implement `build` and `parse` method. 
+- Integer type:`int` and `long`
+- `tuple`
+
+**label**
+
+A human-reading string for the field.Default is None.
+
+### Field types
+
+#### StructField
+
+`class StructField(code, fmt, encoding='utf8', label=None, **kwargs)`
+
+A *abstract* class using `struct.Struct` as its constructor.You can not directly use this class.
+
+**StructField.fmt**
+
+A format string describe structures binary data.
+
+**StructField.encoding**
+
+The encoding name used for encoding and decoding between string and bytes.Default is utf8.
+
+#### SingleField
+
+`class SingleField(code, fmt, encoding='utf8', label=None, **kwargs)`
+
+A field for a single value. All options are the same as `StructField`.
+
+#### SequenceField
+
+`class SingleField(code, fmt, encoding='utf8', label=None, **kwargs)`
+
+A field for tuple.All options are the same as `StructField`.
+
+The `SequenceField.build(value)` must be an iterable. And its `parse` method returns a tuple.
+
+#### DictField
+
+`class DictField(code, fmt, names, encoding='utf8', label=None, **kwargs)`
+
+A field for a dictionary.
+
+The `build` requires a dictionary parameter and the `parse` method returns a dict.
+
+**DictField.names**
+
+The key list for converting between `list` and `dict`.
+
+#### ConstructorField
+
+A field using custom constructor.
+
+`class ConstructorField(code, constructor=None, label=None, **kwargs)`
+
+**ConstructorField.constructor**
+
+A interface object Implement `build` and `parse` method. 
 
 ```python
 class Constructor(object):
@@ -92,8 +151,6 @@ class Constructor(object):
         # return unpack result
         pass
 ```
-
-### 3 Integrate with construct library
 
 [Construct](http://construct.readthedocs.io/en/latest/)  is a powerful declarative parser (and builder) for binary data.There are some classes Implement ing the same methods in the above way.These classes include:
 
@@ -124,21 +181,21 @@ class DeviceConfigStruct(ConfStruct):
     awaken_period = CField(code=0x03, constructor=Int)
 ```
 
-See tests code in the source for more detail.
+#### CField
 
-## Custom Build/Parse Options
+This field is deprecated and will be removed in v1.0.0 .
+
+## API - ConfStruct options
 
 `COptions` is a inner class of ConfStruct contains options affecting build/parse process.
 
-**code_fmt**
+**COptions.code_fmt**
 
-The format string of code field. Default value: >B;
+A format string for code field.Default is `>B`.
 
-**length_fmt**
+**COptions.length_fmt**
 
-The format string of length field.Default value: >B
-
-
+A format string of length field.Default is `>B`.
 
 ## Compatibility
 
