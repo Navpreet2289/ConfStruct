@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 import struct
-import re
 
 import six
 
@@ -70,6 +69,22 @@ class SequenceConstructor(ConstructorBase):
         return values
 
 
+class DictConstructor(ConstructorBase):
+    def __init__(self, fmt, encoding='utf8', **kwargs):
+        super(DictConstructor, self).__init__(fmt=fmt, encoding=encoding, **kwargs)
+        self.names = kwargs.get('names')
+
+    def build(self, value):
+        value = [value.get(n) for n in self.names]
+        value = list(map(self._ensure_bytes, value))
+        return self.struct.pack(*value)
+
+    def parse(self, binary):
+        values = self.struct.unpack(binary)
+        values = list(map(self._ensure_string, values))
+        return dict(zip(self.names, values))
+
+
 # ---------- Fields ----------
 class CFieldBase(object):
     def __init__(self, code, constructor=None, label=None, **kwargs):
@@ -104,7 +119,7 @@ class StructField(CFieldBase):
     constructor_class = None
 
     def __init__(self, code, fmt, encoding='utf8', label=None, **kwargs):
-        constructor = self.constructor_class(fmt=fmt, encoding=encoding)
+        constructor = self.constructor_class(fmt=fmt, encoding=encoding, **kwargs)
         super(StructField, self).__init__(code, constructor=constructor, label=label)
 
 
@@ -117,7 +132,12 @@ class SequenceField(StructField):
 
 
 class DictField(SequenceField):
-    pass
+    constructor_class = DictConstructor
+
+    def __init__(self, code, fmt, names, encoding='utf8', label=None, **kwargs):
+        kwargs['names'] = names
+        super(DictField, self).__init__(code, fmt=fmt, encoding=encoding, label=label, **kwargs)
+        self.names = names
 
 
 class ConstructorField(CFieldBase):

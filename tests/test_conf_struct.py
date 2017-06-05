@@ -6,7 +6,7 @@ import sys
 import struct
 import unittest
 
-from conf_struct import ConfStruct, CField, DefineException, COptions, SequenceField, SingleField
+from conf_struct import ConfStruct, CField, DefineException, COptions, SequenceField, SingleField, DictField
 
 PY36 = sys.version_info[:2] >= (3, 6)
 
@@ -122,16 +122,19 @@ class AdvanceConfStruct(ConfStruct):
     c2 = CField(code=2, fmt='4s')
     c3 = SequenceField(code=3, fmt='>BB')
     c4 = CField(code=4, fmt='>BB', multiple=True)
+    c5 = DictField(code=5, fmt='>BB', names=['x', 'y'])
 
 
 class BTestCase(unittest.TestCase):
-    def test_base(self):
+    def test_fields(self):
         acs = AdvanceConfStruct()
         self.assertEqual({'c1': 'bbbb'}, acs.parse(b'\x01\x04bbbb'))
         self.assertEqual(b'\x02\x04abcd', acs.build(c2='abcd'))
         self.assertEqual(b'\x03\x02\x02\x03', acs.build(c3=(2, 3)))
         self.assertEqual({'c2': 'bbbb'}, acs.parse(b'\x02\x04bbbb'))
         self.assertEqual(b'\x04\x02\x02\x03', acs.build(c4=(2, 3)))
+        self.assertEqual(b'\x05\x02\x01\x02', acs.build(c5={'x': 1, 'y': 2}))
+        self.assertEqual({'c5': {'x': 2, 'y': 4}}, acs.parse(b'\x05\x02\02\x04'))
 
 
 if __name__ == '__main__':
