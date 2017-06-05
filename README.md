@@ -3,6 +3,8 @@
 ![travis](https://travis-ci.org/kinegratii/ConfStruct.svg?branch=master)
 [![PyPI version](https://badge.fury.io/py/ConfStruct.svg)](https://badge.fury.io/py/ConfStruct)
 
+[TOC]
+
 ## Overview
 
 ### What can this project solve  ?
@@ -45,7 +47,7 @@ So the data can be parsed to the `{server_address='192.168.1.200:10200', delayed
 Use `ConfStruct` to describe the device config protocol.
 
 ```python
-from conf_struct import ConfStruct, CField
+from conf_struct import ConfStruct, SingleField, ConstructorField
 
 class ServerAddressStruct:
     def parse(self, binary):
@@ -57,10 +59,10 @@ class ServerAddressStruct:
         ip_l = list(map(int, ip.split('.')))
         return struct.pack('>4BH', ip_l[0], ip_l[1], ip_l[2], ip_l[3], int(port))
 
-class DeviceConfigStruct(ConfStruct):
-    delayed_restart = CField(code=0x01, fmt='>H')
-    server_address = CField(code=0x02, constructor=ServerAddressStruct())
-    awaken_period = CField(code=0x03, fmt='>I')
+class DeviceConfStruct(ConfStruct):
+    delayed_restart = SingleField(code=0x01, format='>H')
+    server_address = ConstructorField(code=0x02, constructor=ServerAddressStruct())
+    awaken_period = SingleField(code=0x03, format='>I')
 ```
 
 Send config value to with `{server_address='192.168.1.200:10200', delayed_restart=180}` .
@@ -73,7 +75,38 @@ b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'
 {'server_address':'192.168.1.200:10200', 'awaken_period': 3600}
 ```
 
-## API - Field
+### Integrate with construct library
+[Construct](http://construct.readthedocs.io/en/latest/)  is a powerful declarative parser (and builder) for binary data.There are some classes Implement ing the same methods in the above way.These classes include:
+
+- Byte,Short,Int etc.
+- Struct
+- Sequence
+- Adapter
+
+The above-mentioned demo code fragment can also rewrite with *Construct* library. 
+
+```python
+from construct import Struct, Adapter, Byte, Short, Int
+from conf_struct import ConfStruct, ConstructorField
+
+class ServerAddressAdapter(Adapter):
+    def _encode(self, obj, context):
+        ip, port = obj.split(":")
+        port = int(port)
+        return list(map(int, ip.split("."))) + [port // 256, port % 256]
+
+    def _decode(self, obj, context):
+        return "{0}.{1}.{2}.{3}:{4}".format(obj[0], obj[1], obj[2], obj[3], obj[4] * 256 + obj[5])
+
+
+class DeviceConfigStruct(ConfStruct):
+    delayed_restart = ConstructorField(code=0x01, constructor=Short)
+    server_address = ConstructorField(code=0x02, constructor=ServerAddressAdapter(Byte[6]))
+    awaken_period = ConstructorField(code=0x03, constructor=Int)
+```
+
+
+## API - Field Options
 
 This part contains all API references of `Field` including the fields options and field type.
 
@@ -90,15 +123,15 @@ A *immutable* object representing the field type, this option is required for ev
 
 A human-reading string for the field.Default is None.
 
-### Field types
+## API - Field Types
 
-#### StructField
+### StructField
 
-`class StructField(code, fmt, encoding='utf8', label=None, **kwargs)`
+`class StructField(code, format, encoding='utf8', label=None, **kwargs)`
 
 A *abstract* class using `struct.Struct` as its constructor.You can not directly use this class.
 
-**StructField.fmt**
+**StructField.format**
 
 A format string describe structures binary data.
 
@@ -106,23 +139,23 @@ A format string describe structures binary data.
 
 The encoding name used for encoding and decoding between string and bytes.Default is utf8.
 
-#### SingleField
+### SingleField
 
-`class SingleField(code, fmt, encoding='utf8', label=None, **kwargs)`
+`class SingleField(code, format, encoding='utf8', label=None, **kwargs)`
 
 A field for a single value. All options are the same as `StructField`.
 
-#### SequenceField
+### SequenceField
 
-`class SingleField(code, fmt, encoding='utf8', label=None, **kwargs)`
+`class SingleField(code, format, encoding='utf8', label=None, **kwargs)`
 
 A field for tuple.All options are the same as `StructField`.
 
 The `SequenceField.build(value)`  requires an iterable as its parameter. And its `parse` method returns a tuple.
 
-#### DictionaryField
+### DictionaryField
 
-`class DictionaryField(code, fmt, names, encoding='utf8', label=None, **kwargs)`
+`class DictionaryField(code, format, names, encoding='utf8', label=None, **kwargs)`
 
 A field for a dictionary.
 
@@ -132,7 +165,7 @@ The `build` requires a dictionary parameter and the `parse` method returns a dic
 
 The key list for converting between `list` and `dict`.
 
-#### ConstructorField
+### ConstructorField
 
 A field using custom constructor.
 
@@ -152,36 +185,7 @@ class Constructor(object):
         pass
 ```
 
-[Construct](http://construct.readthedocs.io/en/latest/)  is a powerful declarative parser (and builder) for binary data.There are some classes Implement ing the same methods in the above way.These classes include:
-
-- Byte,Short,Int etc.
-- Struct
-- Sequence
-- Adapter
-
-The above-mentioned demo code fragment can also rewrite with *Construct* library. 
-
-```python
-from construct import Struct, Adapter, Byte, Short, Int
-from conf_struct import ConfStruct, CField
-
-class ServerAddressAdapter(Adapter):
-    def _encode(self, obj, context):
-        ip, port = obj.split(":")
-        port = int(port)
-        return list(map(int, ip.split("."))) + [port // 256, port % 256]
-
-    def _decode(self, obj, context):
-        return "{0}.{1}.{2}.{3}:{4}".format(obj[0], obj[1], obj[2], obj[3], obj[4] * 256 + obj[5])
-
-
-class DeviceConfigStruct(ConfStruct):
-    delayed_restart = CField(code=0x01, constructor=Short)
-    server_address = CField(code=0x02, constructor=ServerAddressAdapter(Byte[6]))
-    awaken_period = CField(code=0x03, constructor=Int)
-```
-
-#### CField
+### ~~CField~~
 
 This field is deprecated and will be removed in v1.0.0 .
 
@@ -205,6 +209,6 @@ NOTE
 
 - The result of `build` is not unique due to unordered dictionary below python3.6.
 
-## LICENSE
+## License
 
 This project is under MIT License.

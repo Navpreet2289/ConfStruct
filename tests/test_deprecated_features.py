@@ -1,13 +1,14 @@
 # coding=utf8
-
+"""
+Test Case for CField, this module will be removed in v1.0.0 .
+"""
 from __future__ import unicode_literals
 
-import sys
 import struct
+import sys
 import unittest
 
-from conf_struct import ConfStruct, DefineException, COptions, SequenceField, SingleField, DictionaryField, \
-    ConstructorField
+from conf_struct import ConfStruct, CField, DefineException, COptions
 
 PY36 = sys.version_info[:2] >= (3, 6)
 
@@ -24,17 +25,17 @@ class ServerAddressStruct:
 
 
 class DeviceConfStruct(ConfStruct):
-    delayed_restart = SingleField(code=0x01, format='>H')
-    server_address = ConstructorField(code=0x02, constructor=ServerAddressStruct())
-    awaken_period = SingleField(code=0x03, format='>I')
+    delayed_restart = CField(code=0x01, fmt='>H')
+    server_address = CField(code=0x02, constructor=ServerAddressStruct())
+    awaken_period = CField(code=0x03, fmt='>I')
 
 
 class ConfDefineTestCase(unittest.TestCase):
     def test_duplicate_code(self):
         with self.assertRaises(DefineException):
             class DuplicateCodeConf(ConfStruct):
-                name1 = SingleField(code=0x01, format='>H')
-                name2 = SingleField(code=0x01, format='>B')
+                name1 = CField(code=0x01, fmt='>H')
+                name2 = CField(code=0x01, fmt='>B')
 
 
 class ConfTestCase(unittest.TestCase):
@@ -101,8 +102,8 @@ class ConfTestCase(unittest.TestCase):
 # -----------Custom Options Test Cases--------------------
 
 class MetaOptionStruct(ConfStruct):
-    a1 = SingleField(code=0x00, format='>H')
-    a2 = SingleField(code=0x01, format='>I')
+    a1 = CField(code=0x00, fmt='>H')
+    a2 = CField(code=0x01, fmt='>I')
 
     class Options(COptions):
         code_format = '>H'
@@ -114,28 +115,6 @@ class MetaOptionTestCase(unittest.TestCase):
         mos = MetaOptionStruct()
         self.assertEqual(b'\x00\x00\x00\x02\x00\x01', mos.build(a1=1))
         self.assertDictEqual({'a1': 4}, mos.parse(b'\x00\x00\x00\x02\x00\x04'))
-
-
-# --------------- String and multiple element features------------------------------------
-
-class AdvanceConfStruct(ConfStruct):
-    c1 = SingleField(code=1, format='4s')
-    c2 = SingleField(code=2, format='4s')
-    c3 = SequenceField(code=3, format='>BB')
-    c4 = SequenceField(code=4, format='>BB')
-    c5 = DictionaryField(code=5, format='>BB', names=['x', 'y'])
-
-
-class BTestCase(unittest.TestCase):
-    def test_fields(self):
-        acs = AdvanceConfStruct()
-        self.assertEqual({'c1': 'bbbb'}, acs.parse(b'\x01\x04bbbb'))
-        self.assertEqual(b'\x02\x04abcd', acs.build(c2='abcd'))
-        self.assertEqual(b'\x03\x02\x02\x03', acs.build(c3=(2, 3)))
-        self.assertEqual({'c2': 'bbbb'}, acs.parse(b'\x02\x04bbbb'))
-        self.assertEqual(b'\x04\x02\x02\x03', acs.build(c4=(2, 3)))
-        self.assertEqual(b'\x05\x02\x01\x02', acs.build(c5={'x': 1, 'y': 2}))
-        self.assertEqual({'c5': {'x': 2, 'y': 4}}, acs.parse(b'\x05\x02\02\x04'))
 
 
 if __name__ == '__main__':

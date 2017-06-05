@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import struct
+import warnings
 
 import six
 
@@ -26,8 +27,8 @@ class BuildException(Exception):
 # ---------- Constructors  ----------
 
 class ConstructorBase(object):
-    def __init__(self, fmt, encoding='utf8', **kwargs):
-        self.struct = struct.Struct(format=fmt)
+    def __init__(self, format, encoding='utf8', **kwargs):
+        self.struct = struct.Struct(format=format)
         self.encoding = encoding
 
     def build(self, value):
@@ -70,8 +71,8 @@ class SequenceConstructor(ConstructorBase):
 
 
 class DictConstructor(ConstructorBase):
-    def __init__(self, fmt, encoding='utf8', **kwargs):
-        super(DictConstructor, self).__init__(fmt=fmt, encoding=encoding, **kwargs)
+    def __init__(self, format, encoding='utf8', **kwargs):
+        super(DictConstructor, self).__init__(format=format, encoding=encoding, **kwargs)
         self.names = kwargs.get('names')
 
     def build(self, value):
@@ -106,20 +107,22 @@ class CFieldBase(object):
 
 
 class CField(CFieldBase):
-    def __init__(self, code, constructor=None, label=None, fmt=None, encoding='utf8', multiple=False, **kwargs):
-        if fmt:
+    def __init__(self, code, constructor=None, label=None, format=None, encoding='utf8', multiple=False, **kwargs):
+        warnings.warn('The class CField is deprecated and will be removed in v1.0.0', DeprecationWarning)
+        format = format or kwargs.get('fmt')
+        if format:
             if multiple:
-                constructor = SequenceConstructor(fmt=fmt, encoding=encoding, **kwargs)
+                constructor = SequenceConstructor(format=format, encoding=encoding, **kwargs)
             else:
-                constructor = SingleConstructor(fmt=fmt, encoding=encoding, **kwargs)
+                constructor = SingleConstructor(format=format, encoding=encoding, **kwargs)
         super(CField, self).__init__(code, constructor, label, **kwargs)
 
 
 class StructField(CFieldBase):
     constructor_class = None
 
-    def __init__(self, code, fmt, encoding='utf8', label=None, **kwargs):
-        constructor = self.constructor_class(fmt=fmt, encoding=encoding, **kwargs)
+    def __init__(self, code, format, encoding='utf8', label=None, **kwargs):
+        constructor = self.constructor_class(format=format, encoding=encoding, **kwargs)
         super(StructField, self).__init__(code, constructor=constructor, label=label)
 
 
@@ -134,9 +137,9 @@ class SequenceField(StructField):
 class DictionaryField(SequenceField):
     constructor_class = DictConstructor
 
-    def __init__(self, code, fmt, names, encoding='utf8', label=None, **kwargs):
+    def __init__(self, code, format, names, encoding='utf8', label=None, **kwargs):
         kwargs['names'] = names
-        super(DictionaryField, self).__init__(code, fmt=fmt, encoding=encoding, label=label, **kwargs)
+        super(DictionaryField, self).__init__(code, format=format, encoding=encoding, label=label, **kwargs)
         self.names = names
 
 
@@ -148,16 +151,16 @@ class ConstructorField(CFieldBase):
 # ---------- Options ----------
 
 class COptions(object):
-    code_fmt = '>B'
-    length_fmt = '>B'
+    code_format = '>B'
+    length_format = '>B'
 
     def __init__(self, **kwargs):
-        self.code_fmt = struct.Struct(self.code_fmt)
-        self.length_fmt = struct.Struct(self.length_fmt)
+        self.code_format = struct.Struct(self.code_format)
+        self.length_format = struct.Struct(self.length_format)
 
     @property
     def size(self):
-        return self.code_fmt.size + self.length_fmt.size
+        return self.code_format.size + self.length_format.size
 
     @property
     def code_offset(self):
@@ -165,17 +168,17 @@ class COptions(object):
 
     @property
     def length_offset(self):
-        return self.code_fmt.size
+        return self.code_format.size
 
     def pack(self, code, length):
-        return self.code_fmt.pack(code) + self.length_fmt.pack(length)
+        return self.code_format.pack(code) + self.length_format.pack(length)
 
     def unpack_code(self, buffer, offset):
-        code, = self.code_fmt.unpack_from(buffer, offset)
+        code, = self.code_format.unpack_from(buffer, offset)
         return code
 
     def unpack_length(self, buffer, offset):
-        length, = self.length_fmt.unpack_from(buffer, offset)
+        length, = self.length_format.unpack_from(buffer, offset)
         return length
 
 

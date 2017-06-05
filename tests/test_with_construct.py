@@ -2,13 +2,13 @@
 
 from __future__ import unicode_literals
 
-import sys
 import struct
+import sys
 import unittest
 
 from construct import Adapter, Byte, Short, Sequence
 
-from conf_struct import ConfStruct, CField
+from conf_struct import ConfStruct, SingleField, ConstructorField
 
 PY36 = sys.version_info[:2] >= (3, 6)
 
@@ -36,14 +36,14 @@ class ServerAddressAdapter(Adapter):
 
 class DemoConfigStruct(ConfStruct):
     # The structures of value in the following fields are equal.
-    val1 = CField(code=0x01, constructor=Short)
-    val2 = CField(code=0x02, fmt='>H')
+    val1 = ConstructorField(code=0x01, constructor=Short)
+    val2 = SingleField(code=0x02, format='>H')
 
     # The structures of value in the following fields are equal.
-    ip1 = CField(code=0x03, constructor=ServerAddressAdapter(Byte[6]))
-    ip2 = CField(code=0x04, constructor=ServerAddressStruct())
+    ip1 = ConstructorField(code=0x03, constructor=ServerAddressAdapter(Byte[6]))
+    ip2 = ConstructorField(code=0x04, constructor=ServerAddressStruct())
 
-    pos1 = CField(code=0x05, constructor=Sequence(Byte, Byte))
+    pos1 = ConstructorField(code=0x05, constructor=Sequence(Byte, Byte))
 
 
 class BaseTestCase(unittest.TestCase):
