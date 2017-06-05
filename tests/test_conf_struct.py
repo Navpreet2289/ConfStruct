@@ -6,7 +6,7 @@ import sys
 import struct
 import unittest
 
-from conf_struct import ConfStruct, CField, DefineException, COptions, SequenceField, SingleField, DictField
+from conf_struct import ConfStruct, CField, DefineException, COptions, SequenceField, SingleField, DictionaryField
 
 PY36 = sys.version_info[:2] >= (3, 6)
 
@@ -122,7 +122,7 @@ class AdvanceConfStruct(ConfStruct):
     c2 = CField(code=2, fmt='4s')
     c3 = SequenceField(code=3, fmt='>BB')
     c4 = CField(code=4, fmt='>BB', multiple=True)
-    c5 = DictField(code=5, fmt='>BB', names=['x', 'y'])
+    c5 = DictionaryField(code=5, fmt='>BB', names=['x', 'y'])
 
 
 class BTestCase(unittest.TestCase):

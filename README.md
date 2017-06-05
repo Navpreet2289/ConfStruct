@@ -118,17 +118,17 @@ A field for a single value. All options are the same as `StructField`.
 
 A field for tuple.All options are the same as `StructField`.
 
-The `SequenceField.build(value)` must be an iterable. And its `parse` method returns a tuple.
+The `SequenceField.build(value)`  requires an iterable as its parameter. And its `parse` method returns a tuple.
 
-#### DictField
+#### DictionaryField
 
-`class DictField(code, fmt, names, encoding='utf8', label=None, **kwargs)`
+`class DictionaryField(code, fmt, names, encoding='utf8', label=None, **kwargs)`
 
 A field for a dictionary.
 
 The `build` requires a dictionary parameter and the `parse` method returns a dict.
 
-**DictField.names**
+**DictionaryField.names**
 
 The key list for converting between `list` and `dict`.
 

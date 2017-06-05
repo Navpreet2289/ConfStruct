@@ -131,12 +131,12 @@ class SequenceField(StructField):
     constructor_class = SequenceConstructor
 
 
-class DictField(SequenceField):
+class DictionaryField(SequenceField):
     constructor_class = DictConstructor
 
     def __init__(self, code, fmt, names, encoding='utf8', label=None, **kwargs):
         kwargs['names'] = names
-        super(DictField, self).__init__(code, fmt=fmt, encoding=encoding, label=label, **kwargs)
+        super(DictionaryField, self).__init__(code, fmt=fmt, encoding=encoding, label=label, **kwargs)
         self.names = names
 
 
