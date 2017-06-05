@@ -133,7 +133,7 @@ A *abstract* class using `struct.Struct` as its constructor.You can not directly
 
 **StructField.format**
 
-A format string describe structures binary data.
+A format string describe the structure of binary data.
 
 **StructField.encoding**
 
@@ -193,11 +193,11 @@ This field is deprecated and will be removed in v1.0.0 .
 
 `COptions` is a inner class of ConfStruct contains options affecting build/parse process.
 
-**COptions.code_fmt**
+**COptions.code_format**
 
 A format string for code field.Default is `>B`.
 
-**COptions.length_fmt**
+**COptions.length_format**
 
 A format string of length field.Default is `>B`.
 

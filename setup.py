@@ -19,15 +19,14 @@ lib_classifiers = [
 ]
 
 setup(name="ConfStruct",
-      version='0.6.0',
+      version='0.7.0',
       author="kinegratii",
       author_email="kinegratii@gmail.com",
       url="https://github.com/kinegratii/ConfStruct",
       keywords="struct binary pack unpack",
-      tests_require=["pytest"],
       py_modules=["conf_struct"],
       install_requires=['six'],
-      description="A parser and builder between python objects and binary data for configure parameters.",
+      description='A parser and builder between python dictionary and "length-body" binary data.',
       license="MIT",
       classifiers=lib_classifiers
       )
