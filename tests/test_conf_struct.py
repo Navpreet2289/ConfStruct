@@ -123,7 +123,7 @@ class AdvanceConfStruct(ConfStruct):
     c2 = SingleField(code=2, format='4s')
     c3 = SequenceField(code=3, format='>BB')
     c4 = SequenceField(code=4, format='>BB')
-    c5 = DictionaryField(code=5, format='>BB', names=['x', 'y'])
+    c5 = DictionaryField(code=5, format='>BB', field_names=['x', 'y'])
 
 
 class BTestCase(unittest.TestCase):
