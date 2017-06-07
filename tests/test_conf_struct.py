@@ -6,13 +6,13 @@ import sys
 import struct
 import unittest
 
-from conf_struct import ConfStruct, DefineException, COptions, SequenceField, SingleField, DictionaryField, \
+from conf_struct import ConfStructure, DefineException, COptions, SequenceField, SingleField, DictionaryField, \
     ConstructorField
 
 PY36 = sys.version_info[:2] >= (3, 6)
 
 
-class ServerAddressStruct:
+class ServerAddressConstructor:
     def parse(self, binary):
         ip0, ip1, ip2, ip3, port = struct.unpack('>4BH', binary)
         return '{0}.{1}.{2}.{3}:{4}'.format(ip0, ip1, ip2, ip3, port)
@@ -23,23 +23,23 @@ class ServerAddressStruct:
         return struct.pack('>4BH', ip_l[0], ip_l[1], ip_l[2], ip_l[3], int(port))
 
 
-class DeviceConfStruct(ConfStruct):
+class DeviceConfStructure(ConfStructure):
     delayed_restart = SingleField(code=0x01, format='>H')
-    server_address = ConstructorField(code=0x02, constructor=ServerAddressStruct())
+    server_address = ConstructorField(code=0x02, constructor=ServerAddressConstructor())
     awaken_period = SingleField(code=0x03, format='>I')
 
 
 class ConfDefineTestCase(unittest.TestCase):
     def test_duplicate_code(self):
         with self.assertRaises(DefineException):
-            class DuplicateCodeConf(ConfStruct):
+            class DuplicateCodeConf(ConfStructure):
                 name1 = SingleField(code=0x01, format='>H')
                 name2 = SingleField(code=0x01, format='>B')
 
 
 class ConfTestCase(unittest.TestCase):
     def test_base(self):
-        dcs = DeviceConfStruct()
+        dcs = DeviceConfStructure()
 
         binary_data = dcs.build(delayed_restart=180, awaken_period=3600)
         if PY36:
@@ -59,7 +59,7 @@ class ConfTestCase(unittest.TestCase):
         self.assertDictEqual({'delayed_restart': 180, 'awaken_period': 3600}, data2)
 
     def test_custom_constructor(self):
-        dcs = DeviceConfStruct()
+        dcs = DeviceConfStructure()
 
         binary_data = dcs.build(server_address='192.168.1.200:10200')
         self.assertEqual(
@@ -72,7 +72,7 @@ class ConfTestCase(unittest.TestCase):
         self.assertDictEqual({'server_address': '192.168.1.200:10200'}, data)
 
     def test_mixed(self):
-        dcs = DeviceConfStruct()
+        dcs = DeviceConfStructure()
 
         # Build test
         binary_data = dcs.build(delayed_restart=180, awaken_period=3600, server_address='192.168.1.200:10200')
@@ -100,7 +100,7 @@ class ConfTestCase(unittest.TestCase):
 
 # -----------Custom Options Test Cases--------------------
 
-class MetaOptionStruct(ConfStruct):
+class MetaOptionStruct(ConfStructure):
     a1 = SingleField(code=0x00, format='>H')
     a2 = SingleField(code=0x01, format='>I')
 
@@ -118,7 +118,7 @@ class MetaOptionTestCase(unittest.TestCase):
 
 # --------------- String and multiple element features------------------------------------
 
-class AdvanceConfStruct(ConfStruct):
+class AdvanceConfStructure(ConfStructure):
     c1 = SingleField(code=1, format='4s')
     c2 = SingleField(code=2, format='4s')
     c3 = SequenceField(code=3, format='>BB')
@@ -128,7 +128,7 @@ class AdvanceConfStruct(ConfStruct):
 
 class BTestCase(unittest.TestCase):
     def test_fields(self):
-        acs = AdvanceConfStruct()
+        acs = AdvanceConfStructure()
         self.assertEqual({'c1': 'bbbb'}, acs.parse(b'\x01\x04bbbb'))
         self.assertEqual(b'\x02\x04abcd', acs.build(c2='abcd'))
         self.assertEqual(b'\x03\x02\x02\x03', acs.build(c3=(2, 3)))

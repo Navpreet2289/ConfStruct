@@ -8,7 +8,7 @@ import warnings
 
 import six
 
-__all__ = ['DefineException', 'ParseException', 'BuildException', 'ConfStruct', 'CField', 'COptions']
+__all__ = ['DefineException', 'ParseException', 'BuildException', 'ConfStruct', 'ConfStructure', 'CField', 'COptions']
 
 
 # ---------- Exceptions ----------
@@ -216,7 +216,7 @@ class COptions(object):
 
 # ---------- ConfStruct ----------
 
-class ConfStructMeta(type):
+class ConfStructureMeta(type):
     def __new__(cls, name, bases, attrs):
         code_lookup = {}
         name_lookup = {}
@@ -235,7 +235,7 @@ class ConfStructMeta(type):
         return type.__new__(cls, name, bases, attrs)
 
 
-class ConfStruct(six.with_metaclass(ConfStructMeta)):
+class ConfStructure(six.with_metaclass(ConfStructureMeta)):
     @property
     def opts(self):
         return self._opts
@@ -281,3 +281,7 @@ class ConfStruct(six.with_metaclass(ConfStructMeta)):
             if value_binary:
                 binary += self.opts.pack(field.code, len(value_binary)) + value_binary
         return binary
+
+
+# Old alias
+ConfStruct = ConfStructure

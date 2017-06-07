@@ -8,7 +8,7 @@ import unittest
 
 from construct import Adapter, Byte, Short, Sequence
 
-from conf_struct import ConfStruct, SingleField, ConstructorField
+from conf_struct import ConfStructure, SingleField, ConstructorField
 
 PY36 = sys.version_info[:2] >= (3, 6)
 
@@ -34,7 +34,7 @@ class ServerAddressAdapter(Adapter):
         return "{0}.{1}.{2}.{3}:{4}".format(obj[0], obj[1], obj[2], obj[3], obj[4] * 256 + obj[5])
 
 
-class DemoConfigStruct(ConfStruct):
+class DemoConfigStruct(ConfStructure):
     # The structures of value in the following fields are equal.
     val1 = ConstructorField(code=0x01, constructor=Short)
     val2 = SingleField(code=0x02, format='>H')
