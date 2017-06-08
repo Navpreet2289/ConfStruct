@@ -51,7 +51,7 @@ class CComposite(ConstructorMixin):
 
     def build(self, value):
         data = [c.build(v) for c, v in zip(self.constructors, value)]
-        s = reduce(operator.add, data, b'')  # Note:Can not use sum due to integer
+        s = b''.join(data)
         return s
 
     def parse(self, binary):
@@ -87,10 +87,10 @@ class CListComposite(ConstructorMixin):
 
 class StructureConstructorMixin(ConstructorMixin):
     def build(self, value):
-        return self._build(self._encode(value))
+        return self._build(value)
 
     def parse(self, binary):
-        return self._decode(self._parse(binary))
+        return self._parse(binary)
 
     def _build(self, value):
         pass
@@ -98,10 +98,11 @@ class StructureConstructorMixin(ConstructorMixin):
     def _parse(self, binary):
         pass
 
-    def _encode(self, value):
+    # Public API
+    def pre_build(self, value):
         return value
 
-    def _decode(self, value):
+    def post_parse(self, value):
         return value
 
 
@@ -129,32 +130,28 @@ class StructureConstructor(StructureConstructorMixin):
 
 class SingleConstructor(StructureConstructor):
     def _build(self, value):
+        value = self.pre_build(value)
+        value = self._ensure_bytes(value)
         return self.struct.pack(value)
 
     def _parse(self, binary):
         value, = self.struct.unpack(binary)
+        value = self._ensure_string(value)
+        value = self.post_parse(value)
         return value
-
-    def _encode(self, value):
-        return self._ensure_bytes(value)
-
-    def _decode(self, value):
-        return self._ensure_string(value)
 
 
 class SequenceConstructor(StructureConstructor):
     def _build(self, value):
+        value = self.pre_build(value)
+        value = tuple(map(self._ensure_bytes, value))
         return self.struct.pack(*value)
 
     def _parse(self, binary):
         values = self.struct.unpack(binary)
+        values = tuple(map(self._ensure_string, values))
+        values = self.post_parse(values)
         return values
-
-    def _encode(self, value):
-        return tuple(map(self._ensure_bytes, value))
-
-    def _decode(self, value):
-        return tuple(map(self._ensure_string, value))
 
 
 class DictionaryConstructor(SequenceConstructor):
@@ -163,14 +160,18 @@ class DictionaryConstructor(SequenceConstructor):
         self.field_names = field_names
         self._list2dict_class = namedtuple('List2Dict', field_names=field_names)
 
-    def _encode(self, value):
+    def _build(self, value):
+        value = self.pre_build(value)
         data_list = self._list2dict_class(**value)
-        return super(DictionaryConstructor, self)._encode(data_list)
+        value = tuple(map(self._ensure_bytes, data_list))
+        return self.struct.pack(*value)
 
-    def _decode(self, value):
-        data_list = super(DictionaryConstructor, self)._decode(value)
-        nd = self._list2dict_class(*data_list)
-        return nd._asdict()
+    def _parse(self, binary):
+        values = self.struct.unpack(binary)
+        values = tuple(map(self._ensure_string, values))
+        nd = self._list2dict_class(*values)
+        values = self.post_parse(nd._asdict())
+        return values
 
 
 # Short Alias

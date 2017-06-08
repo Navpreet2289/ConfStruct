@@ -26,18 +26,6 @@ class CFieldBase(object):
             return self.constructor.parse(binary)
 
 
-class CField(CFieldBase):
-    def __init__(self, code, constructor=None, label=None, format=None, encoding='utf8', multiple=False, **kwargs):
-        warnings.warn('The class CField is deprecated and will be removed in v1.0.0', DeprecationWarning)
-        format = format or kwargs.get('fmt')
-        if format:
-            if multiple:
-                constructor = SequenceConstructor(format=format, encoding=encoding, **kwargs)
-            else:
-                constructor = SingleConstructor(format=format, encoding=encoding, **kwargs)
-        super(CField, self).__init__(code, constructor, label, **kwargs)
-
-
 class StructField(CFieldBase):
     constructor_class = None
 
@@ -65,3 +53,17 @@ class DictionaryField(SequenceField):
 class ConstructorField(CFieldBase):
     def __init__(self, code, constructor=None, label=None, **kwargs):
         super(ConstructorField, self).__init__(code, constructor, label, **kwargs)
+
+
+# Deprecated Features
+
+class CField(CFieldBase):
+    def __init__(self, code, constructor=None, label=None, format=None, encoding='utf8', multiple=False, **kwargs):
+        warnings.warn('The class CField is deprecated and will be removed in v1.0.0', DeprecationWarning)
+        format = format or kwargs.get('fmt')
+        if format:
+            if multiple:
+                constructor = SequenceConstructor(format=format, encoding=encoding, **kwargs)
+            else:
+                constructor = SingleConstructor(format=format, encoding=encoding, **kwargs)
+        super(CField, self).__init__(code, constructor, label, **kwargs)
