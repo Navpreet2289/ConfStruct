@@ -1,4 +1,4 @@
-# ConfStruct
+#  ConfStruct
 
 ![travis](https://travis-ci.org/kinegratii/ConfStruct.svg?branch=master)
 [![PyPI version](https://badge.fury.io/py/ConfStruct.svg)](https://badge.fury.io/py/ConfStruct)
@@ -47,7 +47,7 @@ So the data can be parsed to the `{server_address='192.168.1.200:10200', delayed
 Use `ConfStruct` to describe the device config protocol.
 
 ```python
-from conf_struct import ConfStruct, SingleField, ConstructorField
+from conf_struct import ConfStructure, SingleField, ConstructorField
 
 class ServerAddressStruct:
     def parse(self, binary):
@@ -59,7 +59,7 @@ class ServerAddressStruct:
         ip_l = list(map(int, ip.split('.')))
         return struct.pack('>4BH', ip_l[0], ip_l[1], ip_l[2], ip_l[3], int(port))
 
-class DeviceConfStruct(ConfStruct):
+class DeviceConfStruct(ConfStructure):
     delayed_restart = SingleField(code=0x01, format='>H')
     server_address = ConstructorField(code=0x02, constructor=ServerAddressStruct())
     awaken_period = SingleField(code=0x03, format='>I')
@@ -105,101 +105,21 @@ class DeviceConfigStruct(ConfStruct):
     awaken_period = ConstructorField(code=0x03, constructor=Int)
 ```
 
+## API Document
 
-## API - Field Options
+See *docs/api.md* for more detail.
 
-This part contains all API references of `Field` including the fields options and field type.
+## TODOs
 
-### General field options
-
-**code**
-
-A *immutable* object representing the field type, this option is required for every field and must be unique.The `Field.code` can be a object as following *immutable type*.
-
-- Integer type:`int` and `long`
-- `tuple`
-
-**label**
-
-A human-reading string for the field.Default is None.
-
-## API - Field Types
-
-### StructField
-
-`class StructField(code, format, encoding='utf8', label=None, **kwargs)`
-
-A *abstract* class using `struct.Struct` as its constructor.You can not directly use this class.
-
-**StructField.format**
-
-A format string describe the structure of binary data.
-
-**StructField.encoding**
-
-The encoding name used for encoding and decoding between string and bytes.Default is utf8.
-
-### SingleField
-
-`class SingleField(code, format, encoding='utf8', label=None, **kwargs)`
-
-A field for a single value. All options are the same as `StructField`.
-
-### SequenceField
-
-`class SingleField(code, format, encoding='utf8', label=None, **kwargs)`
-
-A field for tuple.All options are the same as `StructField`.
-
-The `SequenceField.build(value)`  requires an iterable as its parameter. And its `parse` method returns a tuple.
-
-### DictionaryField
-
-`class DictionaryField(code, format, names, encoding='utf8', label=None, **kwargs)`
-
-A field for a dictionary.
-
-The `build` requires a dictionary parameter and the `parse` method returns a dict.
-
-**DictionaryField.names**
-
-The key list for converting between `list` and `dict`.
-
-### ConstructorField
-
-A field using custom constructor.
-
-`class ConstructorField(code, constructor=None, label=None, **kwargs)`
-
-**ConstructorField.constructor**
-
-A interface object Implement `build` and `parse` method. 
-
-```python
-class Constructor(object):
-    def buid(self, value):
-        # return binary data
-        pass
-    def parse(self, binary):
-        # return unpack result
-        pass
-```
-
-### ~~CField~~
-
-This field is deprecated and will be removed in v1.0.0 .
-
-## API - ConfStruct options
-
-`COptions` is a inner class of ConfStruct contains options affecting build/parse process.
-
-**COptions.code_format**
-
-A format string for code field.Default is `>B`.
-
-**COptions.length_format**
-
-A format string of length field.Default is `>B`.
+- [x] Update module to package.
+- [x] Public API `pre_buid` and `post_parse` for constructors.
+- [x] Custom options for parser and builder.
+- [x] Constructor inherit.
+- [ ] Nested constructor.
+- [ ] ConfStructure inherit.
+- [ ] Size check for parser.
+- [ ] Type check for builder.
+- [ ] Field order in the ConfStructure.
 
 ## Compatibility
 
