@@ -19,7 +19,7 @@ lib_classifiers = [
 ]
 
 setup(name="ConfStruct",
-      version='0.7.0',
+      version='0.8.0',
       author="kinegratii",
       author_email="kinegratii@gmail.com",
       url="https://github.com/kinegratii/ConfStruct",

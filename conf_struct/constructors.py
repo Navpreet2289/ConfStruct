@@ -128,7 +128,7 @@ class StructureConstructor(StructureConstructorMixin):
 
 # ----------Basic Constructors----------
 
-class SingleConstructor(StructureConstructor):
+class CSingle(StructureConstructor):
     def _build(self, value):
         value = self.pre_build(value)
         value = self._ensure_bytes(value)
@@ -141,7 +141,7 @@ class SingleConstructor(StructureConstructor):
         return value
 
 
-class SequenceConstructor(StructureConstructor):
+class CSequence(StructureConstructor):
     def _build(self, value):
         value = self.pre_build(value)
         value = tuple(map(self._ensure_bytes, value))
@@ -154,9 +154,9 @@ class SequenceConstructor(StructureConstructor):
         return values
 
 
-class DictionaryConstructor(SequenceConstructor):
+class CDictionary(CSequence):
     def __init__(self, format, field_names, encoding='utf8', **kwargs):
-        super(DictionaryConstructor, self).__init__(format=format, encoding=encoding, **kwargs)
+        super(CDictionary, self).__init__(format=format, encoding=encoding, **kwargs)
         self.field_names = field_names
         self._list2dict_class = namedtuple('List2Dict', field_names=field_names)
 
@@ -174,16 +174,16 @@ class DictionaryConstructor(SequenceConstructor):
         return values
 
 
-# Short Alias
-
-CSingle = SingleConstructor
-CSequence = SequenceConstructor
-CDictionary = DictionaryConstructor
-
-
 # ----------Common Constructors ----------
 
-class CString(SingleConstructor):
+class CString(CSingle):
     def __init__(self, byte_length, encoding='utf8', **kwargs):
         format = '>{}s'.format(byte_length)
         super(CString, self).__init__(format=format, encoding=encoding, **kwargs)
+
+
+# Short Alias
+
+SingleConstructor = CSingle
+SequenceConstructor = CSequence
+DictionaryConstructor = CDictionary

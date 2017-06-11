@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import warnings
 
-from .constructors import SingleConstructor, SequenceConstructor, DictionaryConstructor
+from .constructors import CSingle, CSequence, CDictionary
 
 
 class CFieldBase(object):
@@ -35,15 +35,15 @@ class StructField(CFieldBase):
 
 
 class SingleField(StructField):
-    constructor_class = SingleConstructor
+    constructor_class = CSingle
 
 
 class SequenceField(StructField):
-    constructor_class = SequenceConstructor
+    constructor_class = CSequence
 
 
 class DictionaryField(SequenceField):
-    constructor_class = DictionaryConstructor
+    constructor_class = CDictionary
 
     def __init__(self, code, format, field_names, encoding='utf8', label=None, **kwargs):
         kwargs['field_names'] = field_names
@@ -63,7 +63,7 @@ class CField(CFieldBase):
         format = format or kwargs.get('fmt')
         if format:
             if multiple:
-                constructor = SequenceConstructor(format=format, encoding=encoding, **kwargs)
+                constructor = CSequence(format=format, encoding=encoding, **kwargs)
             else:
-                constructor = SingleConstructor(format=format, encoding=encoding, **kwargs)
+                constructor = CSingle(format=format, encoding=encoding, **kwargs)
         super(CField, self).__init__(code, constructor, label, **kwargs)
