@@ -75,39 +75,21 @@ b'\x02\x06\xc0\xa8\x01\xc8\x27\xd8\x01\x02\x00\xb4'
 {'server_address':'192.168.1.200:10200', 'awaken_period': 3600}
 ```
 
-### Integrate with construct library
-[Construct](http://construct.readthedocs.io/en/latest/)  is a powerful declarative parser (and builder) for binary data.There are some classes Implement ing the same methods in the above way.These classes include:
+You can also replace `DeviceConfStruct` with `exts.CIPv4Port` constructor in the demo.
 
-- Byte,Short,Int etc.
-- Struct
-- Sequence
-- Adapter
+## Install
 
-The above-mentioned demo code fragment can also rewrite with *Construct* library. 
+You can install this package from PyPI using pip.
 
-```python
-from construct import Struct, Adapter, Byte, Short, Int
-from conf_struct import ConfStruct, ConstructorField
-
-class ServerAddressAdapter(Adapter):
-    def _encode(self, obj, context):
-        ip, port = obj.split(":")
-        port = int(port)
-        return list(map(int, ip.split("."))) + [port // 256, port % 256]
-
-    def _decode(self, obj, context):
-        return "{0}.{1}.{2}.{3}:{4}".format(obj[0], obj[1], obj[2], obj[3], obj[4] * 256 + obj[5])
-
-
-class DeviceConfigStruct(ConfStruct):
-    delayed_restart = ConstructorField(code=0x01, constructor=Short)
-    server_address = ConstructorField(code=0x02, constructor=ServerAddressAdapter(Byte[6]))
-    awaken_period = ConstructorField(code=0x03, constructor=Int)
+```shell
+pip install ConfStruct
 ```
 
-## API Document
+NOTE: if you upgrade from old version to v0.8.0+. You should unistall the old package first.
 
-See *docs/api.md* for more detail.
+## Document
+
+See [docs/guide.md](docs/guide.md) and [docs/api.md](docs/api.md) for more detail.
 
 ## TODOs
 
